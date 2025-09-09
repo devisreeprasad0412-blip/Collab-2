@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Order Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: #e74c3c;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .navbar .cart-btn {
+      background: #2ecc71;
+      border: none;
+      color: white;
+      padding: 8px 15px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    /* Layout */
+    .container {
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 200px;
+      background: #f1f2f6;
+      padding: 20px;
+      height: calc(100vh - 55px);
+    }
+
+    .sidebar h3 {
+      margin-top: 0;
+      color: #e74c3c;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .sidebar ul li {
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .sidebar ul li:hover {
+      background: #dcdde1;
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .food-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: center;
+      padding: 15px;
+      transition: transform 0.2s;
+    }
+
+    .food-card:hover {
+      transform: scale(1.05);
+    }
+
+    .food-card img {
+      width: 100%;
+      border-radius: 10px;
+      height: 150px;
+      object-fit: cover;
+    }
+
+    .food-card h4 {
+      margin: 10px 0;
+    }
+
+    .food-card button {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .food-card button:hover {
+      background: #ff7675;
+    }
+
+    /* Cart Panel */
+    .cart-panel {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 300px;
+      height: 100%;
+      background: white;
+      box-shadow: -3px 0 8px rgba(0,0,0,0.2);
+      padding: 20px;
+      transition: right 0.3s ease;
+      overflow-y: auto;
+    }
+
+    .cart-panel.open {
+      right: 0;
+    }
+
+    .cart-panel h3 {
+      margin-top: 0;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+
+    .cart-total {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <h1>🍔 Foodie Dashboard</h1>
+    <button class="cart-btn" onclick="toggleCart()">Cart (<span id="cartCount">0</span>)</button>
+  </div>
+
+  <!-- Container -->
+  <div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3>Categories</h3>
+      <ul>
+        <li>Burgers</li>
+        <li>Pizza</li>
+        <li>Drinks</li>
+        <li>Desserts</li>
+        <li>Indian</li>
+      </ul>
+    </div>
+
+    <!-- Main -->
+    <div class="main" id="foodList">
+      <!-- Food items loaded by JS -->
+    </div>
+  </div>
+
+  <!-- Cart Panel -->
+  <div class="cart-panel" id="cartPanel">
+    <h3>Your Cart</h3>
+    <div id="cartItems"></div>
+    <div class="cart-total">Total: ₹<span id="cartTotal">0</span></div>
+  </div>
+
+  <script>
+    // Food Data
+    const foods = [
+      { id: 1, name: "Cheese Burger", price: 120, img: "https://via.placeholder.com/200x150?text=Burger" },
+      { id: 2, name: "Veg Pizza", price: 250, img: "https://via.placeholder.com/200x150?text=Pizza" },
+      { id: 3, name: "French Fries", price: 80, img: "https://via.placeholder.com/200x150?text=Fries" },
+      { id: 4, name: "Cold Drink", price: 50, img: "https://via.placeholder.com/200x150?text=Drink" },
+      { id: 5, name: "Chocolate Cake", price: 150, img: "https://via.placeholder.com/200x150?text=Cake" }
+    ];
+
+    let cart = [];
+
+    // Render Foods
+    const foodList = document.getElementById("foodList");
+    foods.forEach(f => {
+      const div = document.createElement("div");
+      div.classList.add("food-card");
+      div.innerHTML = `
+        <img src="${f.img}" alt="${f.name}">
+        <h4>${f.name}</h4>
+        <p>₹${f.price}</p>
+        <button onclick="addToCart(${f.id})">Add to Cart</button>
+      `;
+      foodList.appendChild(div);
+    });
+
+    // Add to Cart
+    function addToCart(id) {
+      const food = foods.find(f => f.id === id);
+      cart.push(food);
+      updateCart();
+    }
+
+    // Update Cart
+    function updateCart() {
+      const cartItems = document.getElementById("cartItems");
+      cartItems.innerHTML = "";
+      let total = 0;
+
+      cart.forEach(item => {
+        total += item.price;
+        cartItems.innerHTML += `
+          <div class="cart-item">
+            <span>${item.name}</span>
+            <span>₹${item.price}</span>
+          </div>
+        `;
+      });
+
+      document.getElementById("cartTotal").innerText = total;
+      document.getElementById("cartCount").innerText = cart.length;
+    }
+
+    // Toggle Cart Panel
+    function toggleCart() {
+      document.getElementById("cartPanel").classList.toggle("open");
+    }
+  </script>
+</body>
+</html>
